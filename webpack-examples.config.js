@@ -7,7 +7,7 @@ require('./examples/build');
 
 var loaders = base.module.loaders.concat([{
   test: /\.css$/,
-  loader: 'style-loader!css-loader'
+  loader: 'style-loader!css-loader',
 }, {
   test: /\.jade$/,
   loader: 'jade'
