@@ -1,0 +1,9 @@
+{
+  "path": "linkedmaps",
+  "title": "Side-by-side maps linked to each other.",
+  "exampleCss": ["main.css"],
+  "exampleJs": ["main.js"],
+  "about": {
+    "text": "This example show how two maps can be centered of different areas by linked in movement."
+  }
+}

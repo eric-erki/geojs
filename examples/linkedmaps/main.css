@@ -1,0 +1,24 @@
+#maindiv {
+  width: 100%;
+  height: calc(100% - 60px);
+  position: relative;
+  overflow: hidden;
+}
+#map1, #map2 {
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  height: 100%;
+  position: absolute;
+}
+#map1 {
+  left: 0;
+}
+#map2 {
+  right: 0;
+}
+
+#map1:focus, #map2:focus {
+  outline: none;
+}
+
