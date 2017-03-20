@@ -12,7 +12,10 @@ $(function () {
     node: '#map1'
   };
   var map2Params = {
-    center: {x: 28.28, y: -15.43},  // Lusaka, Zambia
+    center: {
+      x: query.x ? parseFloat(query.x) : 28.28,
+      y: query.y ? parseFloat(query.y) : -15.43
+    },  // Lusaka, Zambia, unless overridden
     node: '#map2'
   };
 
@@ -36,6 +39,8 @@ $(function () {
   params2.animationQueue = animationQueue;
   var map2 = geo.map(params2);
   map2.createLayer('osm', {
+    gcs: query.tilegcs ? query.tilegcs : undefined,
+    // try: 'mat(0.9848, 0.1736, 0, 0,  -0.1736, 0.9848, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1);EPSG:3857',
     // if ?satellite=true is added to the query, show a different tile source
     // for the second map.
     url: !query.satellite ? undefined :

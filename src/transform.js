@@ -1,4 +1,7 @@
 var proj4 = require('proj4');
+var vec3 = require('gl-vec3');
+var mat4 = require('gl-mat4');
+var util = require('./util');
 
 //////////////////////////////////////////////////////////////////////////////
 /**
@@ -51,19 +54,41 @@ var transform = function (options) {
   }
 
   var m_this = this,
-      m_proj,   // The raw proj4js object
-      m_source, // The source projection
-      m_target; // The target projection
+      m_proj,              // The raw proj4js object
+      m_source,            // The source projection
+      m_target,            // The target projection
+      m_source_matrix,     // an additional transformation for the source
+      m_source_matrix_inv,
+      m_target_matrix,     // an additional transformation for the target
+      m_target_matrix_inv;
 
   /**
    * Generate the internal proj4 object.
    * @private
    */
   function generate_proj4() {
-    m_proj = new proj4(
-      m_this.source(),
-      m_this.target()
-    );
+    var source = m_this.source();
+    var target = m_this.target();
+    m_source_matrix = m_target_matrix = null;
+    if (source.indexOf('mat(') === 0 && source.indexOf(';') > 0) {
+      m_source_matrix = source.split(';')[0].substr(4).split(',').map(parseFloat);
+      source = source.split(';')[1];
+      if (m_source_matrix.length === 16) {
+        m_source_matrix_inv = mat4.invert(util.mat4AsArray(), m_source_matrix);
+      } else {
+        m_source_matrix = null;
+      }
+    }
+    if (target.indexOf('mat(') === 0 && target.indexOf(';') > 0) {
+      m_target_matrix = target.split(';')[0].substr(4).split(',').map(parseFloat);
+      target = target.split(';')[1];
+      if (m_target_matrix.length === 16) {
+        m_target_matrix_inv = mat4.invert(util.mat4AsArray(), m_target_matrix);
+      } else {
+        m_target_matrix = null;
+      }
+    }
+    m_proj = new proj4(source, target);
   }
 
   /**
@@ -102,8 +127,19 @@ var transform = function (options) {
    * @returns {object} A point object in the target coordinates
    */
   this._forward = function (point) {
+    if (m_source_matrix) {
+      point = vec3.transformMat4(util.vec3AsArray(), [point.x, point.y, point.z || 0], m_source_matrix);
+      point = {x: point[0], y: point[1], z: point[2]};
+    }
+
     var pt = m_proj.forward(point);
     pt.z = point.z || 0;
+
+    if (m_target_matrix) {
+      pt = vec3.transformMat4(util.vec3AsArray(), [pt.x, pt.y, pt.z], m_target_matrix_inv);
+      pt = {x: pt[0], y: pt[1], z: pt[2]};
+    }
+
     return pt;
   };
 
@@ -119,8 +155,19 @@ var transform = function (options) {
    * @returns {object} A point object in the source coordinates
    */
   this._inverse = function (point) {
+    if (m_target_matrix) {
+      point = vec3.transformMat4(util.vec3AsArray(), [point.x, point.y, point.z || 0], m_target_matrix);
+      point = {x: point[0], y: point[1], z: point[2]};
+    }
+
     var pt = m_proj.inverse(point);
     pt.z = point.z || 0;
+
+    if (m_source_matrix) {
+      pt = vec3.transformMat4(util.vec3AsArray(), [pt.x, pt.y, pt.z], m_source_matrix_inv);
+      pt = {x: pt[0], y: pt[1], z: pt[2]};
+    }
+
     return pt;
   };
 
