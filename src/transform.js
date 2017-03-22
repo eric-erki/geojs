@@ -104,7 +104,6 @@ var transform = function (options) {
         if (mat.length === 16) {
           // we need the transpose of the matrix because our vector-matrix
           // multiply is done as a row vector.
-          console.log('proj', result); //DWM::
           mat = mat4.transpose(util.mat4AsArray(), mat);
           inv = mat4.invert(util.mat4AsArray(), mat);
           if (inv) {
