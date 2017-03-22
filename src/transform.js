@@ -6,7 +6,7 @@ var util = require('./util');
 //////////////////////////////////////////////////////////////////////////////
 /**
  * This purpose of this class is to provide a generic interface for computing
- * coordinate transformationss.  The interface is taken from the proj4js,
+ * coordinate transformations.  The interface is taken from the proj4js,
  * which also provides the geospatial projection implementation.  The
  * interface is intentionally simple to allow for custom, non-geospatial use
  * cases. For further details, see http://proj4js.org/
@@ -63,31 +63,73 @@ var transform = function (options) {
       m_target_matrix_inv;
 
   /**
+   * Parse a projection string.  The projection string is of the form
+   *   [mat[rix](<values>);]<proj4 projection>
+   * The values for the matrix may be comma or space separated, and may have 4,
+   * 9, or 16 values.  The matrix must be invertible.  White space may be
+   * before or after the whole string and the semicolon delimiter.
+   *
+   * @param {string} projection: a proj4 string with an optional additional
+   *    matrix.
+   * @returns: an object with a string value 'proj' and optional array values
+   *    'matrix' and 'inverse' (either both or neither will be present).
+   *    The returned matrices are always 16-value arrays if present.  The proj
+   *    value is the proj4 string.
+   */
+  function parse_projection(value) {
+    var mat, inv;
+    var parts = /^\s*(mat(|rix)\(([^)]*)\)\s*;\s*|)(\S.*\S)\s*$/.exec(value);
+    var result = {
+      proj: parts ? parts[4] : ''
+    };
+    if (parts && parts[3]) {
+      mat = parts[3].match(/[^\s,]+/g).map(parseFloat);
+      if (!mat.some(isNaN)) {
+        switch (mat.length) {
+          case 4:
+            mat = [
+              mat[0], mat[1], 0, 0,
+              mat[2], mat[3], 0, 0,
+              0, 0, 1, 0,
+              0, 0, 0, 1];
+            break;
+          case 9:
+            mat = [
+              mat[0], mat[1], 0, mat[2],
+              mat[3], mat[4], 0, mat[5],
+              0, 0, 1, 0,
+              mat[6], mat[7], 0, mat[8]];
+            break;
+        }
+        if (mat.length === 16) {
+          // we need the transpose of the matrix because our vector-matrix
+          // multiply is done as a row vector.
+          console.log('proj', result); //DWM::
+          mat = mat4.transpose(util.mat4AsArray(), mat);
+          inv = mat4.invert(util.mat4AsArray(), mat);
+          if (inv) {
+            result.matrix = mat;
+            result.inverse = inv;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
    * Generate the internal proj4 object.
    * @private
    */
   function generate_proj4() {
-    var source = m_this.source();
-    var target = m_this.target();
-    m_source_matrix = m_target_matrix = null;
-    if (source.indexOf('mat(') === 0 && source.indexOf(';') > 0) {
-      m_source_matrix = source.split(';')[0].substr(4).split(',').map(parseFloat);
-      source = source.split(';')[1];
-      if (m_source_matrix.length === 16) {
-        m_source_matrix_inv = mat4.invert(util.mat4AsArray(), m_source_matrix);
-      } else {
-        m_source_matrix = null;
-      }
-    }
-    if (target.indexOf('mat(') === 0 && target.indexOf(';') > 0) {
-      m_target_matrix = target.split(';')[0].substr(4).split(',').map(parseFloat);
-      target = target.split(';')[1];
-      if (m_target_matrix.length === 16) {
-        m_target_matrix_inv = mat4.invert(util.mat4AsArray(), m_target_matrix);
-      } else {
-        m_target_matrix = null;
-      }
-    }
+    var source_proj = parse_projection(m_this.source()),
+        target_proj = parse_projection(m_this.target()),
+        source = source_proj.proj,
+        target = target_proj.proj;
+    m_source_matrix = source_proj.matrix;
+    m_source_matrix_inv = source_proj.inverse;
+    m_target_matrix = target_proj.matrix;
+    m_target_matrix_inv = target_proj.inverse;
     m_proj = new proj4(source, target);
   }
 
@@ -128,16 +170,16 @@ var transform = function (options) {
    */
   this._forward = function (point) {
     if (m_source_matrix) {
-      point = vec3.transformMat4(util.vec3AsArray(), [point.x, point.y, point.z || 0], m_source_matrix);
-      point = {x: point[0], y: point[1], z: point[2]};
+      var mp = vec3.transformMat4(util.vec3AsArray(), [point.x, point.y, point.z || 0], m_source_matrix);
+      point = {x: mp[0], y: mp[1], z: mp[2]};
     }
 
     var pt = m_proj.forward(point);
     pt.z = point.z || 0;
 
     if (m_target_matrix) {
-      pt = vec3.transformMat4(util.vec3AsArray(), [pt.x, pt.y, pt.z], m_target_matrix_inv);
-      pt = {x: pt[0], y: pt[1], z: pt[2]};
+      var ip = vec3.transformMat4(util.vec3AsArray(), [pt.x, pt.y, pt.z], m_target_matrix_inv);
+      pt = {x: ip[0], y: ip[1], z: ip[2]};
     }
 
     return pt;
@@ -156,16 +198,16 @@ var transform = function (options) {
    */
   this._inverse = function (point) {
     if (m_target_matrix) {
-      point = vec3.transformMat4(util.vec3AsArray(), [point.x, point.y, point.z || 0], m_target_matrix);
-      point = {x: point[0], y: point[1], z: point[2]};
+      var mp = vec3.transformMat4(util.vec3AsArray(), [point.x, point.y, point.z || 0], m_target_matrix);
+      point = {x: mp[0], y: mp[1], z: mp[2]};
     }
 
     var pt = m_proj.inverse(point);
     pt.z = point.z || 0;
 
     if (m_source_matrix) {
-      pt = vec3.transformMat4(util.vec3AsArray(), [pt.x, pt.y, pt.z], m_source_matrix_inv);
-      pt = {x: pt[0], y: pt[1], z: pt[2]};
+      var ip = vec3.transformMat4(util.vec3AsArray(), [pt.x, pt.y, pt.z], m_source_matrix_inv);
+      pt = {x: ip[0], y: ip[1], z: ip[2]};
     }
 
     return pt;
