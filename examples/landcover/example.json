@@ -1,0 +1,9 @@
+{
+  "path": "landcover",
+  "title": "NLCD Data",
+  "exampleCss": ["main.css"],
+  "exampleJs": ["main.js"],
+  "about": {
+    "text": "This example shows adding a slippy style nlcd layer and mark annotations on it"
+  }
+}
