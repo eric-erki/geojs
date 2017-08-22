@@ -41,10 +41,6 @@ module.exports = {
       mousetrap: 'mousetrap/mousetrap.js'
     }
   },
-  externals: {
-    d3: 'd3',
-    hammerjs: 'Hammer'
-  },
   plugins: [
     define_plugin,
     new webpack.optimize.UglifyJsPlugin({
