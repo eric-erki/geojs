@@ -116,7 +116,7 @@
     "start": "karma start karma.conf.js",
     "glci": "GEOJS_TEST_CASE=tests/test-gl.js karma start karma-cov.conf.js --single-run --browsers ChromeHeadlessTouch",
     "glci-all": "GEOJS_TEST_CASE=tests/test-gl.js karma start karma-cov.conf.js --single-run --browsers ChromeHeadlessTouch,FirefoxHeadlessTouch",
-    "headedci": "GEOJS_TEST_CASE=tests/test-headed.js karma start karma-cov.conf.js --single-run --browsers ChromeWithProxy",
+    "headedci": "GEOJS_TEST_CASE=tests/test-headed.js karma start karma-cov.conf.js --single-run --browsers ChromeFull",
     "headedci-all": "GEOJS_TEST_CASE=tests/test-headed.js karma start karma-cov.conf.js --single-run --browsers ChromeWithProxy,FirefoxWithProxy",
     "tutorialsci": "GEOJS_TEST_CASE=tests/tutorials.js karma start karma-cov.conf.js --single-run --browsers ChromeHeadlessTouch,PhantomJS",
     "tutorialsci-all": "GEOJS_TEST_CASE=tests/tutorials.js karma start karma-cov.conf.js --single-run --browsers ChromeHeadlessTouch,FirefoxHeadlessTouch,PhantomJS",
